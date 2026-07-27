@@ -6,7 +6,7 @@
 
 ## Project Overview
 
-This project applies machine learning to the Open Observatory of Network Interference (OONI) datase; a free, globally distributed measurement network that captures DNS manipulation, HTTP blocking, and TCP interference events across 240+ countries since 2022.
+This project applies machine learning to the Open Observatory of Network Interference (OONI) dataset; a free, globally distributed measurement network that captures DNS manipulation, HTTP blocking, and TCP interference events across 240+ countries since 2022.
 
 The dataset was selected because it speaks the same language as real network operations: ASN-level data, DNS resolution failures, HTTP header anomalies, TCP latency. The same primitives used here to detect censorship are the same ones used in AIOps and network observability platforms to detect infrastructure anomalies.
 
@@ -16,7 +16,7 @@ The dataset was selected because it speaks the same language as real network ope
 
 View the full interactive dashboard (charts, filters, scenario analysis):
 
-[Open Dashboard](https://thepacketpoet-school.github.io/sdc486l/OONI_Dashboard.html)
+[Open Dashboard](https://thepacketpoet-school.github.io/sdc486l/OONI_Dashboard.html](https://thepacketpoet-school.github.io/sdc486l/Archer_SDC486L_Final_OONI_Dashboard.html)
 
 ---
 
@@ -66,7 +66,7 @@ ooni-capstone-sdc486l/
 │   ├── ooni_task1_metrics.xlsx
 │   └── ooni_scenario_results.xlsx
 └── presentation/
-    └── Archer_SDC486L_OONI_Capstone_Presentation.mp4
+    └── Archer_SDC486L_OONI_Capstone_Presentation.pdf
 ```
 
 ---
