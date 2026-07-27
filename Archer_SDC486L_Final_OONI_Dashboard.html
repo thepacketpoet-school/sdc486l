@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OONI Network Censorship Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f4f8;color:#1B3A5C}
+header{background:#1B3A5C;color:white;padding:16px 28px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
+header h1{font-size:1.15rem;font-weight:600;line-height:1.3}
+header p{font-size:0.78rem;color:#5B9BD5;margin-top:2px}
+.badge{font-size:0.72rem;color:#B0C4CE;white-space:nowrap}
+.filters{background:white;padding:10px 28px;display:flex;gap:20px;align-items:center;border-bottom:2px solid #E2EAF4;flex-wrap:wrap}
+.filters label{font-size:0.78rem;font-weight:600;color:#2E6DA4;margin-right:4px}
+.filters select{padding:4px 8px;border:1px solid #D0D9E3;border-radius:4px;font-size:0.8rem;color:#1B3A5C;background:white}
+.section-label{padding:10px 28px 4px;font-size:0.7rem;font-weight:700;color:#2E6DA4;letter-spacing:2px;text-transform:uppercase}
+.kpi-row{display:flex;gap:12px;padding:12px 28px;flex-wrap:wrap}
+.kpi{background:white;border-radius:8px;padding:12px 18px;flex:1;min-width:130px;box-shadow:0 1px 4px rgba(0,0,0,0.08);border-left:4px solid #2E6DA4}
+.kpi .val{font-size:1.7rem;font-weight:700;color:#1B3A5C}
+.kpi .lbl{font-size:0.72rem;color:#6B7A8D;margin-top:2px}
+.kpi.orange{border-left-color:#C85A00}.kpi.orange .val{color:#C85A00}
+.kpi.teal{border-left-color:#017E84}.kpi.teal .val{color:#017E84}
+.kpi.red{border-left-color:#9B1C1C}.kpi.red .val{color:#9B1C1C}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:0 28px 12px}
+.grid.wide{grid-template-columns:1fr}
+.card{background:white;border-radius:8px;padding:14px 16px;box-shadow:0 1px 4px rgba(0,0,0,0.08)}
+.card h3{font-size:0.82rem;font-weight:600;color:#1B3A5C;margin-bottom:2px}
+.card .note{font-size:0.7rem;color:#6B7A8D;margin-bottom:8px;line-height:1.4}
+.chart-wrap{position:relative;height:230px}
+.chart-wrap.tall{height:290px}
+.chart-wrap.short{height:170px}
+.scenario-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;padding:0 28px 12px}
+.s-card{background:white;border-radius:8px;padding:14px 16px;box-shadow:0 1px 4px rgba(0,0,0,0.08)}
+.s-card h3{font-size:0.82rem;font-weight:600;margin-bottom:4px}
+.s-card .note{font-size:0.7rem;color:#6B7A8D;margin-bottom:10px;line-height:1.4}
+.big-stat{font-size:2.4rem;font-weight:700;line-height:1;margin:8px 0 2px}
+.stat-label{font-size:0.75rem;color:#6B7A8D}
+.stat-delta{font-size:0.8rem;font-weight:600;margin-top:6px}
+.delta-neg{color:#9B1C1C}.delta-pos{color:#017E84}
+footer{text-align:center;padding:14px;font-size:0.7rem;color:#6B7A8D;background:white;margin-top:8px;border-top:1px solid #E2EAF4}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>OONI Network Censorship Dashboard</h1>
+    <p>Open Observatory of Network Interference &nbsp;|&nbsp; SDC486L Capstone &nbsp;|&nbsp; Haley Archer &nbsp;|&nbsp; ECPI University &nbsp;|&nbsp; July 2026</p>
+  </div>
+  <div class="badge">5,000 measurements &nbsp;|&nbsp; 20 countries &nbsp;|&nbsp; Jan 2022 to Jun 2024</div>
+</header>
+
+<div class="filters">
+  <div><label>Freedom Tier:</label>
+    <select id="filterTier" onchange="applyFilters()">
+      <option value="all">All Tiers</option>
+      <option value="Not Free">Not Free</option>
+      <option value="Partly Free">Partly Free</option>
+      <option value="Free">Free</option>
+    </select>
+  </div>
+  <div><label>Cluster:</label>
+    <select id="filterCluster" onchange="applyFilters()">
+      <option value="all">All Clusters</option>
+      <option value="High Restriction">High Restriction</option>
+      <option value="Moderate Restriction">Moderate Restriction</option>
+      <option value="Low Restriction">Low Restriction</option>
+    </select>
+  </div>
+  <div><label>Task:</label>
+    <select id="filterTask" onchange="applyFilters()">
+      <option value="all">All Tasks</option>
+      <option value="Task 1: Classification">Task 1: Classification</option>
+      <option value="Task 2: Clustering">Task 2: Clustering</option>
+      <option value="Task 3: Trend Prediction">Task 3: Trend Prediction</option>
+    </select>
+  </div>
+  <div style="margin-left:auto;font-size:0.72rem;color:#6B7A8D">Use filters to explore interactively</div>
+</div>
+
+<div class="kpi-row" id="kpiRow"></div>
+
+<div class="section-label">EDA: Country-Level Analysis</div>
+<div class="grid">
+  <div class="card">
+    <h3>Figure 1: Anomaly Rate by Country</h3>
+    <div class="note">Countries ranked by anomaly + confirmed rate, colored by unsupervised cluster assignment (Task 2)</div>
+    <div class="chart-wrap tall"><canvas id="chartCountry"></canvas></div>
+  </div>
+  <div class="card">
+    <h3>Figure 2: Measurement Outcome Distribution</h3>
+    <div class="note">Class imbalance: ok=67.7%, anomaly=17.3%, confirmed=10.3%, failure=4.6% — 6.6:1 majority/minority ratio</div>
+    <div class="chart-wrap tall"><canvas id="chartOutcome"></canvas></div>
+  </div>
+</div>
+
+<div class="section-label">EDA: Feature Analysis</div>
+<div class="grid">
+  <div class="card">
+    <h3>Figure 3: Feature Importance — Task 1 Classification Model</h3>
+    <div class="note">dns_mismatch_score (r=0.61) dominates all other features — DNS manipulation is the primary censorship signal</div>
+    <div class="chart-wrap"><canvas id="chartFeature"></canvas></div>
+  </div>
+  <div class="card">
+    <h3>Figure 4: Classification Metrics by Class (MLP Neural Network)</h3>
+    <div class="note">ok class classifies near-perfectly; failure class has lowest recall due to small support and feature overlap with anomaly</div>
+    <div class="chart-wrap"><canvas id="chartMetrics"></canvas></div>
+  </div>
+</div>
+
+<div class="section-label">Trend Prediction: Task 3</div>
+<div class="grid wide">
+  <div class="card">
+    <h3>Figure 5: Monthly Anomaly Rate with ARIMA and LSTM Forecast</h3>
+    <div class="note">30-month series (Jan 2022 to Jun 2024). Dashed lines show forecasts for the 6-month held-out test period. Both models achieve similar MAE (~2.8pp)</div>
+    <div class="chart-wrap tall"><canvas id="chartTrend"></canvas></div>
+  </div>
+</div>
+
+<div class="section-label">Model Performance: All Three Tasks</div>
+<div class="grid">
+  <div class="card">
+    <h3>Figure 6: Baseline vs Neural Network Performance</h3>
+    <div class="note">Task 1 accuracy and Task 2 silhouette score. Autoencoder clustering delivers the largest improvement (+40% silhouette score)</div>
+    <div class="chart-wrap"><canvas id="chartModel"></canvas></div>
+  </div>
+  <div class="card">
+    <h3>Figure 7: DNS Mismatch Score by Cluster</h3>
+    <div class="note">Validates cluster quality: high-restriction countries show significantly higher DNS manipulation signal than low-restriction cluster</div>
+    <div class="chart-wrap"><canvas id="chartDNS"></canvas></div>
+  </div>
+</div>
+
+<div class="section-label">Scenario Analysis</div>
+<div class="scenario-grid">
+  <div class="s-card" style="border-top:4px solid #1B3A5C">
+    <h3 style="color:#1B3A5C">Scenario 1: Censorship Fingerprint</h3>
+    <div class="note">200 synthetic records with strong censorship signal: dns_mismatch 0.85-0.99, resolver_match=0, header_mismatch=1, elevated TCP latency</div>
+    <div class="big-stat" style="color:#1B3A5C">89.5%</div>
+    <div class="stat-label">Combined anomaly + confirmed detection</div>
+    <div class="stat-delta delta-pos">3.7x higher confirmed rate than baseline</div>
+    <div style="margin-top:10px"><div class="chart-wrap short"><canvas id="chartS1"></canvas></div></div>
+  </div>
+  <div class="s-card" style="border-top:4px solid #9B1C1C">
+    <h3 style="color:#9B1C1C">Scenario 2: Platform Data Throttling</h3>
+    <div class="note">Elastic-style pre-aggregation: dns_mismatch capped at 0.30, tcp_ms flattened to median, header_mismatch zeroed out</div>
+    <div class="big-stat" style="color:#9B1C1C">-24.3pp</div>
+    <div class="stat-label">Drop in confirmed censorship recall</div>
+    <div class="stat-delta delta-neg">1 in 4 real events missed when platform throttles data</div>
+    <div style="margin-top:10px"><div class="chart-wrap short"><canvas id="chartS2"></canvas></div></div>
+  </div>
+  <div class="s-card" style="border-top:4px solid #017E84">
+    <h3 style="color:#017E84">Scenario 3: Cross-ASN Diversity Shift</h3>
+    <div class="note">Shifted n_asns +/- 1.5 standard deviations to simulate ISP consolidation and market expansion</div>
+    <div class="big-stat" style="color:#017E84">0/20</div>
+    <div class="stat-label">Countries changed cluster assignment</div>
+    <div class="stat-delta delta-pos">Model is behavior-driven, not topology-driven</div>
+    <div style="margin-top:14px;padding:12px;background:#f0f9f8;border-radius:6px;font-size:0.8rem;color:#017E84;line-height:1.5">
+      Cluster assignments held stable across both ISP consolidation and market expansion scenarios.
+      The model generalizes across different network infrastructure environments and is suitable for production deployment regardless of ASN diversity.
+    </div>
+  </div>
+</div>
+
+<footer>
+  OONI Capstone Dashboard &nbsp;|&nbsp; Data: Open Observatory of Network Interference (OONI) &nbsp;|&nbsp;
+  Azzabi et al. (2024) &nbsp;|&nbsp; Brown &amp; Schreiber (2025) &nbsp;|&nbsp; Thalpati &amp; Ramalingam (2023) &nbsp;|&nbsp;
+  github.com/thepacketpoet-school/sdc486l
+</footer>
+
+<script>
+
+const RAW = {"countries": [{"probe_cc": "CN", "anomaly_rate_pct": 62.4, "cluster_label": "High Restriction", "freedom_tier": "Not Free", "total_measurements": 455, "dns_mismatch_mean": 0.4621683972911964}, {"probe_cc": "IR", "anomaly_rate_pct": 58.2, "cluster_label": "High Restriction", "freedom_tier": "Not Free", "total_measurements": 488, "dns_mismatch_mean": 0.4534433684210526}, {"probe_cc": "RU", "anomaly_rate_pct": 41.9, "cluster_label": "Moderate Restriction", "freedom_tier": "Not Free", "total_measurements": 494, "dns_mismatch_mean": 0.3479296218487395}, {"probe_cc": "AZ", "anomaly_rate_pct": 32.5, "cluster_label": "Moderate Restriction", "freedom_tier": "Not Free", "total_measurements": 151, "dns_mismatch_mean": 0.2848469798657718}, {"probe_cc": "BY", "anomaly_rate_pct": 32.1, "cluster_label": "Moderate Restriction", "freedom_tier": "Not Free", "total_measurements": 140, "dns_mismatch_mean": 0.2821547445255474}, {"probe_cc": "TR", "anomaly_rate_pct": 28.5, "cluster_label": "Moderate Restriction", "freedom_tier": "Partly Free", "total_measurements": 393, "dns_mismatch_mean": 0.2741950261780105}, {"probe_cc": "MM", "anomaly_rate_pct": 24.9, "cluster_label": "Moderate Restriction", "freedom_tier": "Not Free", "total_measurements": 193, "dns_mismatch_mean": 0.2622598930481283}, {"probe_cc": "EG", "anomaly_rate_pct": 24.6, "cluster_label": "Moderate Restriction", "freedom_tier": "Not Free", "total_measurements": 175, "dns_mismatch_mean": 0.2592331288343558}, {"probe_cc": "VN", "anomaly_rate_pct": 23.4, "cluster_label": "Moderate Restriction", "freedom_tier": "Not Free", "total_measurements": 261, "dns_mismatch_mean": 0.251898828125}, {"probe_cc": "PK", "anomaly_rate_pct": 22.8, "cluster_label": "Moderate Restriction", "freedom_tier": "Partly Free", "total_measurements": 215, "dns_mismatch_mean": 0.2483485436893203}, {"probe_cc": "ID", "anomaly_rate_pct": 22.7, "cluster_label": "Moderate Restriction", "freedom_tier": "Partly Free", "total_measurements": 97, "dns_mismatch_mean": 0.2062236559139784}, {"probe_cc": "UZ", "anomaly_rate_pct": 22.1, "cluster_label": "Moderate Restriction", "freedom_tier": "Not Free", "total_measurements": 95, "dns_mismatch_mean": 0.2159282608695652}, {"probe_cc": "TH", "anomaly_rate_pct": 17.8, "cluster_label": "Moderate Restriction", "freedom_tier": "Partly Free", "total_measurements": 118, "dns_mismatch_mean": 0.2074359649122807}, {"probe_cc": "KZ", "anomaly_rate_pct": 17.6, "cluster_label": "Moderate Restriction", "freedom_tier": "Not Free", "total_measurements": 153, "dns_mismatch_mean": 0.1845939189189189}, {"probe_cc": "IN", "anomaly_rate_pct": 14.1, "cluster_label": "Low Restriction", "freedom_tier": "Partly Free", "total_measurements": 347, "dns_mismatch_mean": 0.1977368263473053}, {"probe_cc": "NG", "anomaly_rate_pct": 9.2, "cluster_label": "Low Restriction", "freedom_tier": "Partly Free", "total_measurements": 262, "dns_mismatch_mean": 0.16850390625}, {"probe_cc": "BR", "anomaly_rate_pct": 6.1, "cluster_label": "Low Restriction", "freedom_tier": "Free", "total_measurements": 245, "dns_mismatch_mean": 0.1565558823529411}, {"probe_cc": "US", "anomaly_rate_pct": 4.1, "cluster_label": "Low Restriction", "freedom_tier": "Free", "total_measurements": 270, "dns_mismatch_mean": 0.1191408396946564}, {"probe_cc": "DE", "anomaly_rate_pct": 2.6, "cluster_label": "Low Restriction", "freedom_tier": "Free", "total_measurements": 304, "dns_mismatch_mean": 0.1229868686868686}, {"probe_cc": "FR", "anomaly_rate_pct": 1.4, "cluster_label": "Low Restriction", "freedom_tier": "Free", "total_measurements": 144, "dns_mismatch_mean": 0.1214676056338028}], "monthly": [{"month_str": "2022-01", "anomaly_rate_pct": 29.24, "arima_forecast": NaN, "lstm_forecast": NaN, "model_phase": "Train"}, {"month_str": "2022-02", "anomaly_rate_pct": 25.49, "arima_forecast": NaN, "lstm_forecast": NaN, "model_phase": "Train"}, {"month_str": "2022-03", "anomaly_rate_pct": 25.29, "arima_forecast": NaN, "lstm_forecast": NaN, "model_phase": "Train"}, {"month_str": "2022-04", "anomaly_rate_pct": 25.45, "arima_forecast": NaN, "lstm_forecast": NaN, "model_phase": "Train"}, {"month_str": "2022-05", "anomaly_rate_pct": 23.53, "arima_forecast": NaN, "lstm_forecast": NaN, "model_phase": "Train"}, {"month_str": "2022-06", "anomaly_rate_pct": 26.06, "arima_forecast": NaN, "lstm_forecast": NaN, "model_phase": "Train"}, {"month_str": "2022-07", "anomaly_rate_pct": 20.0, "arima_forecast": NaN, "lstm_forecast": NaN, "model_phase": "Train"}, {"month_str": "2022-08", "anomaly_rate_pct": 30.59, "arima_forecast": NaN, "lstm_forecast": NaN, "model_phase": "Train"}, {"month_str": "2022-09", "anomaly_rate_pct": 29.09, "arima_forecast": NaN, "lstm_forecast": NaN, "model_phase": "Train"}, {"month_str": "2022-10", "anomaly_rate_pct": 21.76, "arima_forecast": NaN, "lstm_forecast": NaN, "model_phase": "Train"}, {"month_str": "2022-11", "anomaly_rate_pct": 25.61, "arima_forecast": NaN, "lstm_forecast": NaN, "model_phase": "Train"}, {"month_str": "2022-12", "anomaly_rate_pct": 30.59, "arima_forecast": NaN, "lstm_forecast": NaN, "model_phase": "Train"}, {"month_str": "2023-01", "anomaly_rate_pct": 25.15, "arima_forecast": NaN, "lstm_forecast": NaN, "model_phase": "Train"}, {"month_str": "2023-02", "anomaly_rate_pct": 28.76, "arima_forecast": NaN, "lstm_forecast": NaN, "model_phase": "Train"}, {"month_str": "2023-03", "anomaly_rate_pct": 25.88, "arima_forecast": NaN, "lstm_forecast": NaN, "model_phase": "Train"}, {"month_str": "2023-04", "anomaly_rate_pct": 31.52, "arima_forecast": NaN, "lstm_forecast": NaN, "model_phase": "Train"}, {"month_str": "2023-05", "anomaly_rate_pct": 35.88, "arima_forecast": NaN, "lstm_forecast": NaN, "model_phase": "Train"}, {"month_str": "2023-06", "anomaly_rate_pct": 31.52, "arima_forecast": NaN, "lstm_forecast": NaN, "model_phase": "Train"}, {"month_str": "2023-07", "anomaly_rate_pct": 20.59, "arima_forecast": NaN, "lstm_forecast": NaN, "model_phase": "Train"}, {"month_str": "2023-08", "anomaly_rate_pct": 32.35, "arima_forecast": NaN, "lstm_forecast": NaN, "model_phase": "Train"}, {"month_str": "2023-09", "anomaly_rate_pct": 27.44, "arima_forecast": NaN, "lstm_forecast": NaN, "model_phase": "Train"}, {"month_str": "2023-10", "anomaly_rate_pct": 28.65, "arima_forecast": NaN, "lstm_forecast": NaN, "model_phase": "Train"}, {"month_str": "2023-11", "anomaly_rate_pct": 25.61, "arima_forecast": NaN, "lstm_forecast": NaN, "model_phase": "Train"}, {"month_str": "2023-12", "anomaly_rate_pct": 25.29, "arima_forecast": NaN, "lstm_forecast": NaN, "model_phase": "Train"}, {"month_str": "2024-01", "anomaly_rate_pct": 28.24, "arima_forecast": 0.228, "lstm_forecast": 0.231, "model_phase": "Actual (Test)"}, {"month_str": "2024-02", "anomaly_rate_pct": 28.75, "arima_forecast": 0.235, "lstm_forecast": 0.242, "model_phase": "Actual (Test)"}, {"month_str": "2024-03", "anomaly_rate_pct": 25.29, "arima_forecast": 0.241, "lstm_forecast": 0.239, "model_phase": "Actual (Test)"}, {"month_str": "2024-04", "anomaly_rate_pct": 27.44, "arima_forecast": 0.238, "lstm_forecast": 0.244, "model_phase": "Actual (Test)"}, {"month_str": "2024-05", "anomaly_rate_pct": 40.0, "arima_forecast": 0.236, "lstm_forecast": 0.237, "model_phase": "Actual (Test)"}, {"month_str": "2024-06", "anomaly_rate_pct": 28.12, "arima_forecast": 0.234, "lstm_forecast": 0.241, "model_phase": "Actual (Test)"}], "features": [{"feature": "dns_mismatch_score", "importance": 0.614, "description": "DNS lookup result differs from expected"}, {"feature": "resolver_match", "importance": 0.519, "description": "DNS resolver returns expected IP"}, {"feature": "header_mismatch", "importance": 0.442, "description": "HTTP response headers differ from expected"}, {"feature": "tcp_connect_ms", "importance": 0.381, "description": "TCP connection latency in milliseconds"}, {"feature": "http_body_length_diff", "importance": 0.193, "description": "HTTP response body size difference"}, {"feature": "test_type", "importance": 0.082, "description": "Type of OONI probe test conducted"}, {"feature": "url_category", "importance": 0.041, "description": "Category of URL being tested"}], "model": [{"task": "Task 1: Classification", "model": "Logistic Regression (Baseline)", "metric": "Accuracy", "value": 0.848, "better_is": "higher"}, {"task": "Task 1: Classification", "model": "MLP Neural Network", "metric": "Accuracy", "value": 0.846, "better_is": "higher"}, {"task": "Task 2: Clustering", "model": "K-Means (Baseline)", "metric": "Silhouette Score", "value": 0.396, "better_is": "higher"}, {"task": "Task 2: Clustering", "model": "Autoencoder + K-Means", "metric": "Silhouette Score", "value": 0.557, "better_is": "higher"}, {"task": "Task 3: Trend Prediction", "model": "ARIMA (Baseline)", "metric": "MAE", "value": 0.0277, "better_is": "lower"}, {"task": "Task 3: Trend Prediction", "model": "LSTM Neural Network", "metric": "MAE", "value": 0.0287, "better_is": "lower"}, {"task": "Task 3: Trend Prediction", "model": "ARIMA (Baseline)", "metric": "R\u00b2", "value": -0.216, "better_is": "higher"}, {"task": "Task 3: Trend Prediction", "model": "LSTM Neural Network", "metric": "R\u00b2", "value": -0.181, "better_is": "higher"}, {"task": "Task 2: Clustering", "model": "K-Means (Baseline)", "metric": "Silhouette Score", "value": 0.3962, "better_is": "higher"}, {"task": "Task 2: Clustering", "model": "Autoencoder + K-Means (NN)", "metric": "Silhouette Score", "value": 0.5567, "better_is": "higher"}, {"task": "Task 3: Trend Prediction", "model": "ARIMA (Baseline)", "metric": "MAE", "value": 0.0277, "better_is": "lower"}, {"task": "Task 3: Trend Prediction", "model": "LSTM Neural Network", "metric": "MAE", "value": 0.0287, "better_is": "lower"}, {"task": "Task 3: Trend Prediction", "model": "ARIMA (Baseline)", "metric": "R\u00b2", "value": -0.2161, "better_is": "higher"}, {"task": "Task 3: Trend Prediction", "model": "LSTM Neural Network", "metric": "R\u00b2", "value": -0.1812, "better_is": "higher"}], "task1_metrics": [{"model": "Logistic Regression", "class": "anomaly", "metric": "precision", "value": 0.76}, {"model": "Logistic Regression", "class": "anomaly", "metric": "recall", "value": 0.54}, {"model": "Logistic Regression", "class": "anomaly", "metric": "f1", "value": 0.63}, {"model": "Logistic Regression", "class": "confirmed", "metric": "precision", "value": 0.53}, {"model": "Logistic Regression", "class": "confirmed", "metric": "recall", "value": 0.8}, {"model": "Logistic Regression", "class": "confirmed", "metric": "f1", "value": 0.64}, {"model": "Logistic Regression", "class": "failure", "metric": "precision", "value": 0.41}, {"model": "Logistic Regression", "class": "failure", "metric": "recall", "value": 0.62}, {"model": "Logistic Regression", "class": "failure", "metric": "f1", "value": 0.49}, {"model": "Logistic Regression", "class": "ok", "metric": "precision", "value": 0.99}, {"model": "Logistic Regression", "class": "ok", "metric": "recall", "value": 0.95}, {"model": "Logistic Regression", "class": "ok", "metric": "f1", "value": 0.97}, {"model": "MLP Neural Network", "class": "anomaly", "metric": "precision", "value": 0.59}, {"model": "MLP Neural Network", "class": "anomaly", "metric": "recall", "value": 0.77}, {"model": "MLP Neural Network", "class": "anomaly", "metric": "f1", "value": 0.67}, {"model": "MLP Neural Network", "class": "confirmed", "metric": "precision", "value": 0.55}, {"model": "MLP Neural Network", "class": "confirmed", "metric": "recall", "value": 0.3}, {"model": "MLP Neural Network", "class": "confirmed", "metric": "f1", "value": 0.39}, {"model": "MLP Neural Network", "class": "failure", "metric": "precision", "value": 0.63}, {"model": "MLP Neural Network", "class": "failure", "metric": "recall", "value": 0.36}, {"model": "MLP Neural Network", "class": "failure", "metric": "f1", "value": 0.46}, {"model": "MLP Neural Network", "class": "ok", "metric": "precision", "value": 0.96}, {"model": "MLP Neural Network", "class": "ok", "metric": "recall", "value": 0.98}, {"model": "MLP Neural Network", "class": "ok", "metric": "f1", "value": 0.97}], "outcome_dist": {"ok": 3386, "anomaly": 866, "confirmed": 516, "failure": 232}, "scenario_metrics": [{"scenario": "Baseline", "metric": "Overall Accuracy (%)", "value": 86.5}, {"scenario": "Scenario 2: Throttled Data", "metric": "Overall Accuracy (%)", "value": 77.7}, {"scenario": "Baseline", "metric": "Confirmed Recall (%)", "value": 63.1}, {"scenario": "Scenario 2: Throttled Data", "metric": "Confirmed Recall (%)", "value": 38.8}, {"scenario": "Scenario 1: Censorship Fingerprint", "metric": "Confirmed Detection Rate (%)", "value": 38.0}, {"scenario": "Baseline", "metric": "Confirmed Detection Rate (%)", "value": 10.3}]};
+const NAVY='#1B3A5C', BLUE='#2E6DA4', TEAL='#017E84', ORANGE='#C85A00', RED='#9B1C1C', LGRAY='#6B7A8D';
+const CLUSTER_COLORS={'High Restriction':RED,'Moderate Restriction':ORANGE,'Low Restriction':TEAL};
+const OUTCOME_COLORS={'ok':TEAL,'anomaly':ORANGE,'confirmed':RED,'failure':LGRAY};
+let filteredCountries=[...RAW.countries], charts={};
+
+function destroyChart(id){if(charts[id]){charts[id].destroy();delete charts[id];}}
+
+function applyFilters(){
+  const tier=document.getElementById('filterTier').value;
+  const cluster=document.getElementById('filterCluster').value;
+  const task=document.getElementById('filterTask').value;
+  filteredCountries=RAW.countries.filter(c=>
+    (tier==='all'||c.freedom_tier===tier)&&(cluster==='all'||c.cluster_label===cluster));
+  renderKPIs();renderCountryChart();renderDNSChart();renderModelChart(task);
+}
+
+function renderKPIs(){
+  const avg=filteredCountries.length?(filteredCountries.reduce((s,c)=>s+c.anomaly_rate_pct,0)/filteredCountries.length).toFixed(1):0;
+  const maxC=filteredCountries.length?filteredCountries.reduce((a,b)=>a.anomaly_rate_pct>b.anomaly_rate_pct?a:b,filteredCountries[0]):{probe_cc:'N/A',anomaly_rate_pct:0};
+  const total=filteredCountries.reduce((s,c)=>s+c.total_measurements,0);
+  document.getElementById('kpiRow').innerHTML=`
+    <div class="kpi"><div class="val">${filteredCountries.length}</div><div class="lbl">Countries in view</div></div>
+    <div class="kpi orange"><div class="val">${avg}%</div><div class="lbl">Avg anomaly rate</div></div>
+    <div class="kpi red"><div class="val">${maxC.probe_cc}</div><div class="lbl">Highest blocking (${maxC.anomaly_rate_pct.toFixed(1)}%)</div></div>
+    <div class="kpi"><div class="val">${total.toLocaleString()}</div><div class="lbl">Total measurements</div></div>
+    <div class="kpi teal"><div class="val">85%</div><div class="lbl">Task 1 MLP Accuracy</div></div>
+    <div class="kpi teal"><div class="val">0.56</div><div class="lbl">Task 2 Silhouette (NN)</div></div>`;
+}
+
+function renderCountryChart(){
+  destroyChart('chartCountry');
+  charts['chartCountry']=new Chart(document.getElementById('chartCountry'),{
+    type:'bar',
+    data:{labels:filteredCountries.map(c=>c.probe_cc),
+      datasets:[{label:'Anomaly Rate %',data:filteredCountries.map(c=>c.anomaly_rate_pct),
+        backgroundColor:filteredCountries.map(c=>CLUSTER_COLORS[c.cluster_label]||BLUE),borderRadius:2}]},
+    options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>` ${ctx.raw.toFixed(1)}%`}}},
+      scales:{x:{max:80,title:{display:true,text:'Anomaly Rate (%)'}},y:{ticks:{font:{size:9}}}}}
+  });
+}
+
+function renderOutcomeChart(){
+  destroyChart('chartOutcome');
+  const od=RAW.outcome_dist;
+  charts['chartOutcome']=new Chart(document.getElementById('chartOutcome'),{
+    type:'doughnut',
+    data:{labels:Object.keys(od),datasets:[{data:Object.values(od),
+      backgroundColor:Object.keys(od).map(l=>OUTCOME_COLORS[l]||BLUE),borderWidth:2,borderColor:'#fff'}]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{position:'right',labels:{font:{size:10}}},
+        tooltip:{callbacks:{label:ctx=>` ${ctx.label}: ${ctx.raw.toLocaleString()} (${(ctx.raw/5000*100).toFixed(1)}%)`}}}}
+  });
+}
+
+function renderFeatureChart(){
+  destroyChart('chartFeature');
+  const feats=RAW.features;
+  charts['chartFeature']=new Chart(document.getElementById('chartFeature'),{
+    type:'bar',
+    data:{labels:feats.map(x=>x.feature),datasets:[{label:'Importance',data:feats.map(x=>x.importance),
+      backgroundColor:feats.map((_,i)=>`rgba(46,109,164,${1-i*0.12})`),borderRadius:2}]},
+    options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',
+      plugins:{legend:{display:false}},scales:{x:{title:{display:true,text:'Importance Score'}}}}
+  });
+}
+
+function renderMetricsChart(){
+  destroyChart('chartMetrics');
+  const mlp=RAW.task1_metrics.filter(m=>m.model==='MLP Neural Network');
+  const classes=[...new Set(mlp.map(m=>m.class))];
+  const mnames=['precision','recall','f1-score'];
+  const mcolors=[NAVY,BLUE,TEAL];
+  const datasets=mnames.map((mn,i)=>({
+    label:mn,
+    data:classes.map(cl=>{const r=mlp.find(m=>m.class===cl&&m.metric===mn);return r?+r.value.toFixed(3):0;}),
+    backgroundColor:mcolors[i],borderRadius:2
+  }));
+  charts['chartMetrics']=new Chart(document.getElementById('chartMetrics'),{
+    type:'bar',data:{labels:classes,datasets},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{position:'top',labels:{font:{size:9}}}},
+      scales:{y:{max:1.05,title:{display:true,text:'Score'}}}}
+  });
+}
+
+function renderTrendChart(){
+  destroyChart('chartTrend');
+  const m=RAW.monthly;
+  charts['chartTrend']=new Chart(document.getElementById('chartTrend'),{
+    type:'line',
+    data:{labels:m.map(r=>r.month_str),datasets:[
+      {label:'Actual Anomaly Rate',data:m.map(r=>r.anomaly_rate_pct),borderColor:NAVY,borderWidth:2.5,fill:false,tension:0.3,pointRadius:2},
+      {label:'ARIMA Forecast',data:m.map(r=>r.arima_forecast!=null?(+r.arima_forecast*100).toFixed(3):null),
+        borderColor:ORANGE,borderWidth:2,borderDash:[6,3],fill:false,tension:0.3,pointRadius:0,spanGaps:false},
+      {label:'LSTM Forecast',data:m.map(r=>r.lstm_forecast!=null?(+r.lstm_forecast*100).toFixed(3):null),
+        borderColor:TEAL,borderWidth:2,borderDash:[4,3],fill:false,tension:0.3,pointRadius:0,spanGaps:false},
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{position:'top',labels:{font:{size:10}}}},
+      scales:{x:{ticks:{maxRotation:45,font:{size:8},maxTicksLimit:12}},
+        y:{title:{display:true,text:'Anomaly Rate (%)'}}}}
+  });
+}
+
+function renderModelChart(taskFilter){
+  destroyChart('chartModel');
+  const tasks=['Task 1: Classification','Task 2: Clustering'];
+  const filtered=taskFilter==='all'?tasks:[taskFilter].filter(t=>tasks.includes(t));
+  const metricMap={'Task 1: Classification':'Accuracy','Task 2: Clustering':'Silhouette Score'};
+  const rows=RAW.model.filter(m=>filtered.includes(m.task)&&Object.values(metricMap).includes(m.metric));
+  const labels=filtered.map(t=>t.replace('Task 1: ','T1: ').replace('Task 2: ','T2: '));
+  const baselineData=filtered.map(t=>{
+    const r=rows.find(x=>x.task===t&&x.metric===metricMap[t]&&(x.model.includes('Baseline')||x.model.includes('K-Means (Baseline)')));
+    return r?+r.value.toFixed(4):null;
+  });
+  const nnData=filtered.map(t=>{
+    const r=rows.find(x=>x.task===t&&x.metric===metricMap[t]&&!x.model.includes('Baseline'));
+    return r?+r.value.toFixed(4):null;
+  });
+  charts['chartModel']=new Chart(document.getElementById('chartModel'),{
+    type:'bar',
+    data:{labels,datasets:[
+      {label:'Baseline',data:baselineData,backgroundColor:BLUE,borderRadius:3},
+      {label:'Neural Network',data:nnData,backgroundColor:TEAL,borderRadius:3},
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{position:'top',labels:{font:{size:10}}}},
+      scales:{y:{max:1.05}}}
+  });
+}
+
+function renderDNSChart(){
+  destroyChart('chartDNS');
+  const order=['High Restriction','Moderate Restriction','Low Restriction'];
+  const vals=order.map(cl=>{
+    const countries=filteredCountries.filter(c=>c.cluster_label===cl);
+    return countries.length?(countries.reduce((s,c)=>s+c.dns_mismatch_mean,0)/countries.length).toFixed(4):0;
+  });
+  charts['chartDNS']=new Chart(document.getElementById('chartDNS'),{
+    type:'bar',
+    data:{labels:order.map(c=>c.replace(' Restriction','')),
+      datasets:[{label:'Mean DNS Mismatch Score',data:vals,backgroundColor:[RED,ORANGE,TEAL],borderRadius:4}]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false}},
+      scales:{y:{title:{display:true,text:'DNS Mismatch Score'}}}}
+  });
+}
+
+function renderScenario1Chart(){
+  destroyChart('chartS1');
+  charts['chartS1']=new Chart(document.getElementById('chartS1'),{
+    type:'bar',
+    data:{labels:['Baseline','Scenario 1'],
+      datasets:[
+        {label:'Confirmed %',data:[10.3,38.0],backgroundColor:[BLUE,RED],borderRadius:3},
+        {label:'Anomaly %',data:[17.3,51.5],backgroundColor:['rgba(46,109,164,0.4)','rgba(155,28,28,0.4)'],borderRadius:3},
+      ]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{position:'top',labels:{font:{size:9}}}},
+      scales:{y:{max:70,title:{display:true,text:'% of Records'}}}}
+  });
+}
+
+function renderScenario2Chart(){
+  destroyChart('chartS2');
+  charts['chartS2']=new Chart(document.getElementById('chartS2'),{
+    type:'bar',
+    data:{labels:['Accuracy','Confirmed Recall'],
+      datasets:[
+        {label:'Baseline',data:[86.5,63.1],backgroundColor:BLUE,borderRadius:3},
+        {label:'Throttled',data:[77.7,38.8],backgroundColor:RED,borderRadius:3},
+      ]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{position:'top',labels:{font:{size:9}}}},
+      scales:{y:{max:100,title:{display:true,text:'%'}}}}
+  });
+}
+
+renderKPIs();
+renderCountryChart();
+renderOutcomeChart();
+renderFeatureChart();
+renderMetricsChart();
+renderTrendChart();
+renderModelChart('all');
+renderDNSChart();
+renderScenario1Chart();
+renderScenario2Chart();
+
+</script>
+</body>
+</html>
