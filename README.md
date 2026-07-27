@@ -12,6 +12,14 @@ The dataset was selected because it speaks the same language as real network ope
 
 ---
 
+## Interactive Dashboard
+
+View the full interactive dashboard (charts, filters, scenario analysis):
+
+[Open Dashboard](https://thepacketpoet-school.github.io/sdc486l/OONI_Dashboard.html)
+
+---
+
 ## Research Questions
 
 1. **Classification:** Can a machine learning model reliably distinguish confirmed censorship events from measurement noise and clean results?
@@ -41,14 +49,15 @@ The dataset was selected because it speaks the same language as real network ope
 ## Repository Structure
 
 ```
-ooni-capstone-sdc485/
-├── OONI_EDA_Part2.ipynb              # Part 2: Data preparation and EDA
-├── OONI_ML_Part3.ipynb               # Part 3: Baseline models and neural networks
-├── OONI_Part5_ScenarioAnalysis.ipynb # Part 5: Scenario analysis
-├── OONI_Capstone_Dashboard_HArcher.twbx  # Tableau dashboard
-├── OONI_Final_Report.docx            # Comprehensive final report
+ooni-capstone-sdc486l/
+├── Archer_SDC486L_W2_OONI_EDA_Part2.ipynb              # Part 2: Data preparation and EDA
+├── Archer_SDC486L_W3_OONI_ML_Part3.ipynb               # Part 3: Baseline models and neural networks
+├── Archer_SDC486L_W5_OONI_Part5_ScenarioAnalysis.ipynb # Part 5: Scenario analysis
+├── Archer_SDC486L_Final_OONI_Capstone_Dashboard.twbx  # Tableau dashboard
+├── Archer_SDC486L_W5_OONI_Final_Report.docx            # Comprehensive final report
+├── ooni_sample.csv                                     # 5,000-record structured dataset sample used by all three notebooks; preprocessed from the OONI AWS Open Data source (s3://ooni-data-eu-fra)
 ├── README.md                         # This file
-├── data/
+├── tableau_data/
 │   ├── ooni_sample_tableau.xlsx
 │   ├── ooni_country_summary.xlsx
 │   ├── ooni_monthly_trend.xlsx
@@ -57,7 +66,7 @@ ooni-capstone-sdc485/
 │   ├── ooni_task1_metrics.xlsx
 │   └── ooni_scenario_results.xlsx
 └── presentation/
-    └── OONI_Capstone_Presentation.mp4
+    └── Archer_SDC486L_OONI_Capstone_Presentation.mp4
 ```
 
 ---
